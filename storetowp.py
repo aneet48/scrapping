@@ -2,20 +2,20 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods import posts, media
 from wordpress_xmlrpc.compat import xmlrpc_client
 
-import requests
-import os.path
-from bs4 import BeautifulSoup
 import json
 import random
 from datetime import datetime
 import colorer,logging
-from PIL import Image
-from io import BytesIO
+import urllib.request
 
-toScrap = 'http://wp.test/'
+
+# toScrap = 'http://wp.test/'
+# username = 'admin'
+# password = 'redefine123'
+
+toScrap = 'http://localhost/wordpress/'
 username = 'admin'
-password = 'redefine123'
-
+password = 'admin'
 # connect withe admin user of wordpress site
 client = Client(toScrap+'/xmlrpc.php', username, password)
 data = []
@@ -23,14 +23,13 @@ offset = 0
 increment = 100
 while True:
         wp_posts = client.call(posts.GetPosts(
-            {'post_type': 'q_author','number': increment, 'offset': offset}))
+            {'post_type': 'quotes','number': increment, 'offset': offset}))
         if len(wp_posts) == 0:
                 break  # no more posts returned
         for post in wp_posts:
-                data.append({'id':post.id,'title':post.title})
+                data.append(post.title)
         offset = offset + increment
 # q_authors = ','.join(data)
-print(data)
 
 class bcolors:
     HEADER = '\033[95m'
@@ -56,23 +55,37 @@ def validate(html):
 
 
 def printMsg(msg):
-    print ""
-    print bcolors.OKGREEN + \
-        "/---------------------------------------------------------------------------/"
-    print bcolors.WARNING+"                   "+msg + bcolors.OKGREEN
-    print "/---------------------------------------------------------------------------/"+bcolors.ENDC
-    print ""
+    print (bcolors.OKGREEN + \
+        "/---------------------------------------------------------------------------/")
+    print( bcolors.WARNING+"                   "+msg + bcolors.OKGREEN)
+    print( "/---------------------------------------------------------------------------/"+bcolors.ENDC)
 
 
 def getQuotesFromJson():
     print(bcolors.WARNING+"*** Getting links list from file ***"+bcolors.ENDC)
-    filePath = './main-quotes.json'
+    filePath = './main-quotes-id.json'
     url_list = ''
     print ("getting list from file")
     with open(filePath, 'r') as filehandle:
             url_list = json.load(filehandle)
     return url_list
 def createQuote(url):
+    tags="random"
+    name = str(random.randint(100, 10000))+'.png'
+    attachment_id=''
+    idata = {
+            'name': name,
+            'type': 'image/png',  # mimetype
+    }
+    if(url['categories']):
+        categories = ','.join(url['categories'])
+    res =urllib.request.urlretrieve('https://source.unsplash.com/800x400/?'+categories, "./img-quote/"+name)
+    if(res):
+        with open('./img-quote/'+name, 'rb') as img:
+            idata['bits'] = xmlrpc_client.Binary(img.read())
+        response = client.call(media.UploadFile(idata))
+        attachment_id=response['attachment_id']
+
     print( bcolors.OKBLUE + " creating post " + bcolors.ENDC)
     postDate = datetime.now()
     post = WordPressPost()
@@ -82,19 +95,18 @@ def createQuote(url):
     post.post_status = "publish"
     post.author = "admin"
     post.date = postDate
-    # post.thumbnail = postImg
+    post.thumbnail = attachment_id
     post.terms_names = {
         'quotes_category': url['categories'],
     }
     post.custom_fields = []
     post.custom_fields.append({
         'key': 'q_author',
-        'value':url['author']
+        'value':url['author-id']
     })
     addpost = client.call(posts.NewPost(post))
     if(addpost):
         print (bcolors.OKGREEN + "post created " + bcolors.ENDC)
-    exit()
 
 def find_a(json_object, name):
         return [obj for obj in json_object if obj['author']==name]
@@ -103,10 +115,8 @@ def main():
     printMsg('Starting Scrapping')
     q_list = getQuotesFromJson()
     for url in q_list:
-        res = find_a(data, url['author'])
-        print(res)
-        # createQuote(url)
-        exit()
+        if(url['quote'] not in data):
+            createQuote(url)
 
 if __name__ == '__main__':
     main()
