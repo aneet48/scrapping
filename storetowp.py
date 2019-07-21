@@ -29,7 +29,7 @@ while True:
         for post in wp_posts:
                 data.append(post.title)
         offset = offset + increment
-# q_authors = ','.join(data)
+q_authors = ','.join(data)
 
 class bcolors:
     HEADER = '\033[95m'
@@ -62,10 +62,10 @@ def printMsg(msg):
 
 
 def getQuotesFromJson():
-    print(bcolors.WARNING+"*** Getting links list from file ***"+bcolors.ENDC)
+    # print(bcolors.WARNING+"*** Getting links list from file ***"+bcolors.ENDC)
     filePath = './main-quotes-id.json'
     url_list = ''
-    print ("getting list from file")
+    # print ("getting list from file")
     with open(filePath, 'r') as filehandle:
             url_list = json.load(filehandle)
     return url_list
@@ -89,7 +89,7 @@ def createQuote(url):
     print( bcolors.OKBLUE + " creating post " + bcolors.ENDC)
     postDate = datetime.now()
     post = WordPressPost()
-    post.title = 'Quote #'+str(random.randint(100, 10000))
+    post.title = url['id']
     post.post_type = 'quotes'
     post.content = url['quote']
     post.post_status = "publish"
@@ -112,10 +112,11 @@ def find_a(json_object, name):
         return [obj for obj in json_object if obj['author']==name]
 
 def main():
-    printMsg('Starting Scrapping')
+    # printMsg('Starting Scrapping')
     q_list = getQuotesFromJson()
     for url in q_list:
-        if(url['quote'] not in data):
+        if(url['id'] not in q_authors):
+            print('storing '+url['id'])
             createQuote(url)
 
 if __name__ == '__main__':

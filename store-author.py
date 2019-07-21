@@ -7,9 +7,9 @@ import random
 
 import urllib.request
 
-toScrap = 'http://localhost/wordpress/'
+toScrap = 'https://arbites.in/qoutes'
 username = 'admin'
-password = 'admin'
+password = 'takerisk48'
 client = Client(toScrap+'/xmlrpc.php', username, password)
 
 # postsAll = client.call(posts.GetPosts())

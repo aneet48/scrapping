@@ -6,6 +6,8 @@ from wordpress_xmlrpc.compat import xmlrpc_client
 import random 
 
 import urllib.request
+import random 
+
 
 toScrap = 'http://localhost/wordpress/'
 username = 'admin'
@@ -42,6 +44,7 @@ if(len(a_list)):
     for a in a_list:
         res = findauthor(data,a['author'])
         a['author-id'] = res
+        a['id'] = 'Quote #'+str(random.randint(100, 10000))
         new_list.append(a)
         print(res)
 print(new_list)
